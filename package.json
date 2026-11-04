@@ -1,0 +1,15 @@
+{
+  "name": "js_fundamentals",
+  "version": "1.0.0",
+  "description": "PW course from Zero to Hero - Udemy",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "//type_note": "Change 'type' from 'commonjs' to 'module' if you want to use ES6 'import/export' instead of 'require/module.exports'",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
