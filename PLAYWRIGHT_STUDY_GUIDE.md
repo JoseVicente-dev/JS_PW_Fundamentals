@@ -5,7 +5,7 @@ A comprehensive reference covering core Playwright architecture, modern locator 
 ---
 
 ## Table of Contents
-1. [Playwright Architecture & Core Mental Model](#1-playwright-architecture--core-mental-model)
+1. [Setup, Installation & Core Architecture](#1-setup-installation--core-architecture)
 2. [Anatomy of a Playwright Test & Lifecycle Hooks](#2-anatomy-of-a-playwright-test--lifecycle-hooks)
 3. [Modern Locator Strategies (User-Facing vs. Technical)](#3-modern-locator-strategies)
 4. [Actions & Auto-Waiting Mechanics](#4-actions--auto-waiting-mechanics)
@@ -18,7 +18,82 @@ A comprehensive reference covering core Playwright architecture, modern locator 
 
 ---
 
-## 1. Playwright Architecture & Core Mental Model
+## 1. Setup, Installation & Core Architecture
+
+### Package Installation (`npm install`) vs. Browser Binaries (`playwright install`)
+
+Setting up Playwright involves two distinct installation layers:
+
+```
++-------------------------------------------------------------------------+
+| Layer 1: Node Packages (Local to project: ./node_modules)              |
+|          Command: npm install (or npm i)                                |
+|          Installs: @playwright/test runner, test APIs, TypeScript types |
++-------------------------------------------------------------------------+
+                                    │
+                                    ▼
++-------------------------------------------------------------------------+
+| Layer 2: Dedicated Browser Binaries (Global OS Cache)                  |
+|          Command: npx playwright install                                |
+|          Downloads: Headless-ready Chromium, Firefox, WebKit            |
+|          Location (Windows): %LOCALAPPDATA%\ms-playwright               |
++-------------------------------------------------------------------------+
+```
+
+#### 1. Node Packages (`npm install`)
+* Reads `package.json` and downloads `@playwright/test` into your local `node_modules/` folder.
+* Generates/updates `package-lock.json` to lock dependency versions.
+* **Run whenever:** You clone a project, pull dependency changes, or start a new repository.
+
+#### 2. Browser Binaries (`npx playwright install`)
+* Downloads dedicated browser binaries for **Chromium**, **Firefox**, and **WebKit**.
+* Stored **globally on your operating system**, outside your project folder:
+  * **Windows:** `C:\Users\<User>\AppData\Local\ms-playwright`
+  * **macOS:** `~/Library/Caches/ms-playwright`
+  * **Linux:** `~/.cache/ms-playwright`
+
+---
+
+### Why Doesn't Playwright Use Your Personal Desktop Browsers?
+
+Even if Google Chrome, Edge, or Firefox are already installed on your PC, Playwright relies on its own dedicated binaries:
+
+1. **Clean, Deterministic Environment (No "Dirty" Profiles):**
+   * Personal desktop browsers contain extensions, ad-blockers, history, saved cookies, and cached authentication that cause automated tests to fail unpredictably.
+   * Playwright browsers launch with a 100% clean, fresh profile every single time.
+2. **Apple Safari (WebKit) on Windows & Linux:**
+   * Apple does not build Safari for Windows. Playwright bundles an open-source, compiled build of **WebKit** for Windows, allowing you to test Safari rendering and behaviors without needing a Mac.
+3. **Controlled & Patched Automation Builds:**
+   * Automatic background updates to desktop Chrome can silently break test automation. Playwright pins exact, heavily-tested builds optimized for high-speed bi-directional WebSocket communication.
+
+---
+
+### Global Browser Caching: Do You Need to Install Browsers Every Time?
+
+**No.** Because Playwright stores browser binaries in a global cache (`%LOCALAPPDATA%\ms-playwright`):
+* **Reused Across Projects:** If you already ran `npx playwright install` for a given Playwright version on your PC, any other project using that version will automatically reuse those exact same browsers.
+* **When you actually need to run `npx playwright install`:**
+  1. On a brand-new computer that has never run Playwright before.
+  2. Inside CI/CD runners (GitHub Actions, GitLab CI, Jenkins).
+  3. When you upgrade `@playwright/test` to a newer version that requires updated browser builds.
+
+---
+
+### Recommended IDE Setup: "Playwright Test for VSCode" Extension
+
+If you are developing in **VS Code** or **Google Antigravity IDE** (which is built on the VS Code architecture), it is strongly recommended to install the official Microsoft extension:
+
+* **Extension Name:** **Playwright Test for VSCode** (Extension ID: `ms-playwright.playwright`)
+* **How to install:** Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>, search for `Playwright Test for VSCode`, and click **Install**.
+
+#### Key Features Provided by the Extension:
+1. **One-Click Run & Debug:** Adds clickable green "Play" buttons directly in the editor gutter next to every `test()` and `test.describe()` block.
+2. **Interactive Breakpoints:** Click next to line numbers to set breakpoints. Run tests in debug mode to inspect variables and DOM state mid-test.
+3. **Dedicated Testing Sidebar:** Adds a flask icon (Testing view) showing your complete test hierarchy with live pass/fail badges.
+4. **"Show Browser" Mode:** Toggle "Show Browser" in the testing panel to see tests execute headed in real time during development.
+5. **"Record at Cursor" & "Pick Locator":** Click "Record at cursor" to interact with a page and have Playwright write the code into your file automatically.
+
+---
 
 ### Why Playwright is Different
 Traditional automation tools (like Selenium WebDriver) operate via HTTP commands through intermediary executable drivers (e.g., `chromedriver.exe`). Playwright directly drives browsers over a **single bi-directional WebSocket connection** via native browser debugging protocols (Chrome DevTools Protocol for Chromium, and equivalent internal protocols for Firefox and WebKit).
