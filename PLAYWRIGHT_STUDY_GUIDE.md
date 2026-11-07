@@ -741,30 +741,178 @@ test.describe('Login Functionality', () => {
 
 ---
 
-### Interactive Debugging Techniques
+### Interactive UI Mode (`npx playwright test --ui`) - The Developer Cockpit
 
-#### 1. `await page.pause()`
-Pauses execution and launches the Playwright Inspector at that specific line:
-```typescript
-test('debug step', async ({ page }) => {
-  await page.goto('https://example.com');
-  await page.pause(); // 🛑 Test pauses here! Step through with Inspector.
-  await page.getByRole('button', { name: 'Submit' }).click();
-});
+Playwright's **UI Mode** is the primary visual environment for authoring, running, and debugging tests locally. It integrates the test runner, trace viewer, live network inspector, and locator generator into a unified interactive desktop application.
+
+#### Launching UI Mode
+```bash
+npx playwright test --ui
 ```
 
-#### 2. Trace Viewer (Post-Mortem Analysis)
-Trace Viewer is the most powerful debugging tool in Playwright. It captures:
-* Full DOM snapshots before and after every action.
-* Screenshots, console logs, and network telemetry.
-* Time-travel scrubber.
+#### Core Capabilities & Features
 
-In `playwright.config.ts`, configure trace collection:
-```typescript
-use: {
-  trace: 'on-first-retry', // Options: 'on', 'off', 'retain-on-failure', 'on-first-retry'
-}
+1. **Time-Travel Debugging:**
+   * Step through every action (`goto`, `click`, `fill`, `expect`) in your test suite.
+   * Hover over the timeline scrubber at the top to see the exact state of the page at any millisecond.
+   * View split **Before** and **After** DOM snapshots to see exactly how an element changed after a click or keystroke.
+
+2. **Watch Mode (Eye Icon):**
+   * Click the **Watch (Eye)** icon next to an individual test, a `describe` block, or an entire test file.
+   * Whenever you save changes in your code editor, Playwright automatically re-runs the watched tests in milliseconds.
+
+3. **Pick Locator Tool:**
+   * Click the **Pick Locator** button in the preview pane.
+   * Hover over any live element on the rendered page and click it. Playwright automatically suggests and copies the optimal, accessible locator (e.g., `page.getByRole('button', { name: 'Submit' })`).
+
+4. **Action, Network & Console Telemetry:**
+   * **Action Tab:** Shows action duration, scroll position, and which auto-waiting checks passed (attached, visible, stable, enabled).
+   * **Network Tab:** Inspect every network request triggered by the application, including HTTP status codes, query parameters, request bodies, and JSON responses.
+   * **Console Tab:** Shows real browser `console.log`, warnings, and errors emitted by the web page.
+   * **Source Tab:** Highlights the exact line in your test file that executed each step.
+
+5. **Multi-Browser & Status Filtering:**
+   * Run tests simultaneously or selectively against **Chromium**, **Firefox**, and **WebKit** using the project filter checkboxes.
+   * Filter tests by status (`Passed`, `Failed`, `Skipped`).
+
+---
+
+#### 💡 Troubleshooting: "No tests found" in UI Mode
+If you launch UI Mode and the test sidebar appears empty:
+1. **Wrong Working Directory:** Run `pwd` in your terminal. You must be in the folder containing `playwright.config.ts`. If you are in a parent or sub-folder, `cd` to the project root.
+2. **Active Text Filter:** Check the text search bar at the top of the test list. If there is an accidental character or space, clear it.
+3. **Unchecked Projects:** Under the search bar, verify that at least one project checkbox (`chromium`, `firefox`, `webkit`) is checked.
+4. **Diagnostic Command:** Run `npx playwright test --list` in the terminal to verify Playwright discovers your spec files without syntax errors.
+
+---
+
+### The 7 Debugging Modes in Playwright
+
+Playwright provides a dedicated debugging mode for every stage of development, from real-time step-by-step debugging to post-mortem CI failure analysis.
+
+---
+
+#### Mode 1: Interactive UI Mode (`npx playwright test --ui`)
+* **Best for:** Everyday test development, time-travel scrubbing, watch mode, and picking locators.
+* **How it works:** Opens the full Playwright desktop app where you can see DOM before/after snapshots and re-run tests on file save.
+* **Command:**
+  ```bash
+  npx playwright test --ui
+  ```
+
+---
+
+#### Mode 2: Playwright Inspector (`--debug`)
+* **Best for:** Stepping through test execution line-by-line with a live browser and inspector panel.
+* **How it works:** Automatically launches headed browsers, sets default timeout to infinity, and opens the Playwright Inspector. You can click **"Step over" (F10)**, **"Resume" (F5)**, or edit and evaluate locators live in the page.
+* **Command:**
+  ```bash
+  # Debug all tests:
+  npx playwright test --debug
+
+  # Debug a specific file:
+  npx playwright test tests/example.spec.ts --debug
+
+  # Debug a specific test by line number:
+  npx playwright test tests/example.spec.ts:10 --debug
+  ```
+
+---
+
+#### Mode 3: Programmatic Pause (`await page.pause()`)
+* **Best for:** Pausing execution at a specific line without running the entire suite in debug mode.
+* **How it works:** Insert `await page.pause()` right before the failing step. Playwright will run at normal speed until it hits that line, then pause and open the Inspector.
+* **Example:**
+  ```typescript
+  test('debug specific step', async ({ page }) => {
+    await page.goto('https://example.com');
+    await page.getByRole('button', { name: 'Filter' }).click();
+
+    // 🛑 Execution freezes here! Inspector opens automatically:
+    await page.pause();
+
+    await page.getByRole('button', { name: 'Submit' }).click();
+  });
+  ```
+
+---
+
+#### Mode 4: VS Code / Antigravity IDE Debugger (Native Breakpoints)
+* **Best for:** Debugging both Playwright actions and complex TypeScript/JavaScript variable logic.
+* **How it works:**
+  1. Click in the margin next to any line number in your test file to set a **red breakpoint**.
+  2. Right-click the green "Play" arrow in the gutter and choose **Debug Test** (or click the bug icon).
+  3. Use the standard IDE debug toolbar to step into/over code, view local variables in the Scope pane, and evaluate expressions in the Debug Console.
+
+---
+
+#### Mode 5: Trace Viewer (Post-Mortem Analysis)
+* **Best for:** Investigating flaky or failing tests from CI/CD pipelines without re-running them locally.
+* **How it works:** Records a `.zip` file containing every DOM snapshot, network call, console log, and screenshot.
+* **Commands:**
+  ```bash
+  # 1. Run test and force trace recording:
+  npx playwright test --trace on
+
+  # 2. View the recorded trace:
+  npx playwright show-trace test-results/<test-folder>/trace.zip
+
+  # 3. Or view via HTML report:
+  npx playwright show-report
+  ```
+  *(Alternatively, drag-and-drop `trace.zip` into [trace.playwright.dev](https://trace.playwright.dev)).*
+
+---
+
+#### Mode 6: Headed Mode with Slow-Motion (`--headed` & `--slowmo`)
+* **Best for:** Visually watching the test execute in a real browser at human speed.
+* **How it works:** Runs the real browser visibly and introduces an artificial delay (in milliseconds) between every action.
+* **Command:**
+  ```bash
+  # Slow down each action by 500ms (half a second):
+  npx playwright test --headed --slowmo 500
+  ```
+  *(Can also be set in `playwright.config.ts` under `use: { launchOptions: { slowMo: 500 } }`).*
+
+---
+
+#### Mode 7: Browser DevTools Console (`PWDEBUG=console`)
+* **Best for:** Interacting with Playwright's locator engine directly inside the real Chrome DevTools console (F12).
+* **How it works:** Exposes a global `playwright` object in the browser console.
+* **Command (PowerShell):**
+  ```powershell
+  $env:PWDEBUG="console"
+  npx playwright test --headed
+  ```
+* **Inside the browser F12 Console, you can run:**
+  ```javascript
+  playwright.$('text=Submit')
+  playwright.locator('button.primary')
+  playwright.inspect('button.primary') // Highlights element in DOM tree
+  ```
+
+---
+
+### Verbose Protocol Logs (`DEBUG=pw:api`)
+To print every low-level WebSocket protocol message and actionability check directly to your terminal:
+```powershell
+$env:DEBUG="pw:api"
+npx playwright test
 ```
+
+---
+
+### Quick Comparison: Which Debugging Mode Should You Use?
+
+| Goal / Scenario | Recommended Mode | Flag / Command |
+| :--- | :--- | :--- |
+| **Active Test Development & Tweaking** | **UI Mode** | `npx playwright test --ui` |
+| **Step-by-step Execution with Live DOM** | **Debug Mode** | `npx playwright test --debug` |
+| **Pause at a single tricky line** | **Page Pause** | `await page.pause()` |
+| **Inspect TS Variables & Call Stack** | **IDE Debugger** | Breakpoint $\rightarrow$ *Debug Test* |
+| **Diagnose CI/CD Failures** | **Trace Viewer** | `npx playwright show-trace trace.zip` |
+| **Watch test at human speed** | **Headed + SlowMo** | `npx playwright test --headed --slowmo 500` |
+| **Test locators directly in DevTools** | **Console Mode** | `PWDEBUG=console` |
 
 ---
 
