@@ -1,3 +1,55 @@
+<!--
+================================================================================
+AI AGENT DIRECTIVE: TOKEN-EFFICIENT EDITING & TOPIC MAP
+================================================================================
+DO NOT READ THIS ENTIRE FILE. It is 1,000+ lines. Use targeted read_file calls:
+
+1. TOPIC MAP & ESTIMATED REGIONS:
+   - TOC        (~L30-L55)   : Table of Contents & jump links.
+   - Section 1  (~L60-L200)  : Setup, npm vs npx install, global cache, VS Code extension, Browser/Context/Page.
+   - Section 2  (~L200-L365) : Test structure, { page } fixture & destructuring, lifecycle hooks, annotations.
+   - Section 3  (~L365-L480) : Modern Locators (getByRole, getByLabel, etc.), chaining, filtering, strict mode.
+   - Section 4  (~L480-L575) : Actions (click, fill vs pressSequentially), auto-waiting & actionability checks.
+   - Section 5  (~L575-L630) : Web-First Assertions (auto-retrying vs generic Jest assertions), cheatsheet.
+   - Section 6  (~L630-L660) : Async mechanics & The 'await' Golden Rule.
+   - Section 7  (~L660-L750) : Complex Scenarios (iFrames, multiple tabs/popups, dialogs, network mocking).
+   - Section 8  (~L750-L840) : Page Object Model (POM) pattern, class implementation & test specs.
+   - Section 9  (~L840-L1030): CLI commands, UI mode, Inspector, Trace Viewer, Codegen, page.pause().
+   - Section 10 (~L1030-End) : playwright.config.ts options, parallelism, timeouts, best practices.
+
+2. PROTOCOL FOR ADDING CONTENT:
+   - To modify/append to an existing section: Use read_file with StartLine/EndLine targeting ONLY that section (~50-100 lines), then use edit_file with a unique target string.
+   - To add a new top-level section: Append or insert at the appropriate boundary, and remember to update the Table of Contents.
+   - Formatting style: English language, GitHub Markdown, tables for comparisons, TypeScript code snippets with inline comments, callout alerts (> 💡, > ⚠️).
+================================================================================
+-->
+
+<!--
+================================================================================
+AI AGENT DIRECTIVE: TOKEN-EFFICIENT EDITING & TOPIC MAP
+================================================================================
+DO NOT READ THIS ENTIRE FILE. It is 1,000+ lines. Use targeted read_file calls:
+
+1. TOPIC MAP & ESTIMATED REGIONS:
+   - TOC        (~L30-L55)   : Table of Contents & jump links.
+   - Section 1  (~L60-L200)  : Setup, npm vs npx install, global cache, VS Code extension, Browser/Context/Page.
+   - Section 2  (~L200-L365) : Test structure, { page } fixture & destructuring, lifecycle hooks, annotations.
+   - Section 3  (~L365-L480) : Modern Locators (getByRole, getByLabel, etc.), chaining, filtering, strict mode.
+   - Section 4  (~L480-L575) : Actions (click, fill vs pressSequentially), auto-waiting & actionability checks.
+   - Section 5  (~L575-L630) : Web-First Assertions (auto-retrying vs generic Jest assertions), cheatsheet.
+   - Section 6  (~L630-L660) : Async mechanics & The 'await' Golden Rule.
+   - Section 7  (~L660-L750) : Complex Scenarios (iFrames, multiple tabs/popups, dialogs, network mocking).
+   - Section 8  (~L750-L840) : Page Object Model (POM) pattern, class implementation & test specs.
+   - Section 9  (~L840-L1030): CLI commands, UI mode, Inspector, Trace Viewer, Codegen, page.pause().
+   - Section 10 (~L1030-End) : playwright.config.ts options, parallelism, timeouts, best practices.
+
+2. PROTOCOL FOR ADDING CONTENT:
+   - To modify/append to an existing section: Use read_file with StartLine/EndLine targeting ONLY that section (~50-100 lines), then use edit_file with a unique target string.
+   - To add a new top-level section: Append or insert at the appropriate boundary, and remember to update the Table of Contents.
+   - Formatting style: English language, GitHub Markdown, tables for comparisons, TypeScript code snippets with inline comments, callout alerts (> 💡, > ⚠️).
+================================================================================
+-->
+
 # Playwright Test Automation Study Guide
 
 A comprehensive reference covering core Playwright architecture, modern locator strategies, auto-waiting mechanics, web-first assertions, Page Object Model (POM), and advanced testing workflows.
@@ -188,6 +240,148 @@ Playwright passes pre-configured test fixtures into your test function via objec
 | **`context`** | `BrowserContext` | The isolated context containing the test's `page`. |
 | **`browser`** | `Browser` | The shared browser instance. |
 | **`request`** | `APIRequestContext` | Lightweight HTTP client for direct API testing. |
+
+---
+
+### Why is `page` Passed as `{ page }`? (JavaScript Object Destructuring & Fixtures)
+
+A common question when writing your first Playwright test is why the callback argument is enclosed in curly braces `{ page }` instead of a plain parameter `page`:
+
+```typescript
+// ❌ WRONG (treating fixtures as a single positional parameter):
+test('invalid parameter syntax', async (page) => {
+  // 'page' is NOT the Page object here! It is the entire fixtures object: { page, context, browser, ... }
+  // Calling page.goto(...) will result in a TypeError!
+});
+
+// ✅ CORRECT (using ES6 object destructuring):
+test('valid parameter syntax', async ({ page }) => {
+  await page.goto('https://example.com');
+});
+```
+
+This syntax is governed by two core concepts: **ES6 Object Destructuring** and **Playwright Fixtures**.
+
+#### 1. Under the Hood: A Single Fixtures Object
+Playwright's test runner does not pass individual positional arguments to your callback function. Instead, it passes a **single container object** holding all available testing resources (called *Fixtures*):
+
+```javascript
+// What Playwright internally delivers to your test callback:
+{
+  page: [Page Object],
+  context: [BrowserContext Object],
+  browser: [Browser Object],
+  browserName: 'chromium',
+  request: [APIRequestContext Object],
+  // ...other configured fixtures
+}
+```
+
+* **Without destructuring (traditional syntax):** You would have to accept the whole object and access `.page` repeatedly:
+  ```typescript
+  test('without destructuring', async (fixtures) => {
+    await fixtures.page.goto('https://example.com');
+    console.log(fixtures.browserName);
+  });
+  ```
+* **With destructuring (`{ page }`):** JavaScript extracts the `page` property directly into a standalone local variable, keeping your test code concise and clean:
+  ```typescript
+  test('with destructuring', async ({ page }) => {
+    await page.goto('https://example.com');
+  });
+  ```
+
+#### 2. Key Architectural Benefits
+
+##### A. Order Independence & Selective Usage
+Unlike standard positional parameters (`function(a, b, c)`) where you must pass placeholder arguments or follow a strict order, object destructuring allows you to request only what you need, in any order:
+
+```typescript
+// Only need to run API calls (no browser opened):
+test('test api endpoint', async ({ request }) => { ... });
+
+// Need both page and the current browser's name:
+test('cross-browser check', async ({ page, browserName }) => { ... });
+
+// Need raw browser access to spin up multiple contexts:
+test('multi-user session', async ({ browser }) => { ... });
+```
+
+##### B. On-Demand / Lazy Fixture Initialization
+Playwright statically inspects the parameter list of your test function before running it:
+* If you **omit** `{ page }` (e.g., when you only ask for `{ request }`), Playwright **never spins up a browser window or tab**, saving significant CPU, memory, and execution time.
+* Playwright only prepares and initializes the exact fixtures you explicitly declared inside `{ ... }`.
+
+---
+
+### Why is `page` Passed as `{ page }`? (JavaScript Object Destructuring & Fixtures)
+
+A common question when writing your first Playwright test is why the callback argument is enclosed in curly braces `{ page }` instead of a plain parameter `page`:
+
+```typescript
+// ❌ WRONG (treating fixtures as a single positional parameter):
+test('invalid parameter syntax', async (page) => {
+  // 'page' is NOT the Page object here! It is the entire fixtures object: { page, context, browser, ... }
+  // Calling page.goto(...) will result in a TypeError!
+});
+
+// ✅ CORRECT (using ES6 object destructuring):
+test('valid parameter syntax', async ({ page }) => {
+  await page.goto('https://example.com');
+});
+```
+
+This syntax is governed by two core concepts: **ES6 Object Destructuring** and **Playwright Fixtures**.
+
+#### 1. Under the Hood: A Single Fixtures Object
+Playwright's test runner does not pass individual positional arguments to your callback function. Instead, it passes a **single container object** holding all available testing resources (called *Fixtures*):
+
+```javascript
+// What Playwright internally delivers to your test callback:
+{
+  page: [Page Object],
+  context: [BrowserContext Object],
+  browser: [Browser Object],
+  browserName: 'chromium',
+  request: [APIRequestContext Object],
+  // ...other configured fixtures
+}
+```
+
+* **Without destructuring (traditional syntax):** You would have to accept the whole object and access `.page` repeatedly:
+  ```typescript
+  test('without destructuring', async (fixtures) => {
+    await fixtures.page.goto('https://example.com');
+    console.log(fixtures.browserName);
+  });
+  ```
+* **With destructuring (`{ page }`):** JavaScript extracts the `page` property directly into a standalone local variable, keeping your test code concise and clean:
+  ```typescript
+  test('with destructuring', async ({ page }) => {
+    await page.goto('https://example.com');
+  });
+  ```
+
+#### 2. Key Architectural Benefits
+
+##### A. Order Independence & Selective Usage
+Unlike standard positional parameters (`function(a, b, c)`) where you must pass placeholder arguments or follow a strict order, object destructuring allows you to request only what you need, in any order:
+
+```typescript
+// Only need to run API calls (no browser opened):
+test('test api endpoint', async ({ request }) => { ... });
+
+// Need both page and the current browser's name:
+test('cross-browser check', async ({ page, browserName }) => { ... });
+
+// Need raw browser access to spin up multiple contexts:
+test('multi-user session', async ({ browser }) => { ... });
+```
+
+##### B. On-Demand / Lazy Fixture Initialization
+Playwright statically inspects the parameter list of your test function before running it:
+* If you **omit** `{ page }` (e.g., when you only ask for `{ request }`), Playwright **never spins up a browser window or tab**, saving significant CPU, memory, and execution time.
+* Playwright only prepares and initializes the exact fixtures you explicitly declared inside `{ ... }`.
 
 ---
 
