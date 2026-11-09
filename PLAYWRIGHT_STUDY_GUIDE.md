@@ -24,32 +24,6 @@ DO NOT READ THIS ENTIRE FILE. It is 1,000+ lines. Use targeted read_file calls:
 ================================================================================
 -->
 
-<!--
-================================================================================
-AI AGENT DIRECTIVE: TOKEN-EFFICIENT EDITING & TOPIC MAP
-================================================================================
-DO NOT READ THIS ENTIRE FILE. It is 1,000+ lines. Use targeted read_file calls:
-
-1. TOPIC MAP & ESTIMATED REGIONS:
-   - TOC        (~L30-L55)   : Table of Contents & jump links.
-   - Section 1  (~L60-L200)  : Setup, npm vs npx install, global cache, VS Code extension, Browser/Context/Page.
-   - Section 2  (~L200-L365) : Test structure, { page } fixture & destructuring, lifecycle hooks, annotations.
-   - Section 3  (~L365-L480) : Modern Locators (getByRole, getByLabel, etc.), chaining, filtering, strict mode.
-   - Section 4  (~L480-L575) : Actions (click, fill vs pressSequentially), auto-waiting & actionability checks.
-   - Section 5  (~L575-L630) : Web-First Assertions (auto-retrying vs generic Jest assertions), cheatsheet.
-   - Section 6  (~L630-L660) : Async mechanics & The 'await' Golden Rule.
-   - Section 7  (~L660-L750) : Complex Scenarios (iFrames, multiple tabs/popups, dialogs, network mocking).
-   - Section 8  (~L750-L840) : Page Object Model (POM) pattern, class implementation & test specs.
-   - Section 9  (~L840-L1030): CLI commands, UI mode, Inspector, Trace Viewer, Codegen, page.pause().
-   - Section 10 (~L1030-End) : playwright.config.ts options, parallelism, timeouts, best practices.
-
-2. PROTOCOL FOR ADDING CONTENT:
-   - To modify/append to an existing section: Use read_file with StartLine/EndLine targeting ONLY that section (~50-100 lines), then use edit_file with a unique target string.
-   - To add a new top-level section: Append or insert at the appropriate boundary, and remember to update the Table of Contents.
-   - Formatting style: English language, GitHub Markdown, tables for comparisons, TypeScript code snippets with inline comments, callout alerts (> 💡, > ⚠️).
-================================================================================
--->
-
 # Playwright Test Automation Study Guide
 
 A comprehensive reference covering core Playwright architecture, modern locator strategies, auto-waiting mechanics, web-first assertions, Page Object Model (POM), and advanced testing workflows.
